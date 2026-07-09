@@ -1,0 +1,149 @@
+import os
+import requests
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+class INNORIXClient:
+
+    def __init__(self):
+
+        self.base_url = os.getenv("INNORIX_BASE_URL").rstrip("/")
+        self.api_key = os.getenv("INNORIX_API_KEY")
+
+        self.session = requests.Session()
+
+        self.session.headers.update({
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        })
+
+    # ---------------------------------------------------------
+    # Create Transfer (Single / Multi Target)
+    # ---------------------------------------------------------
+
+    def create_transfer(
+        self,
+        source_id,
+        targets,
+        files
+    ):
+
+        payload = {
+            "source_id": source_id,
+            "targets": targets,
+            "files": files
+        }
+
+        response = self.session.post(
+            f"{self.base_url}/api/transfer-history",
+            json=payload
+        )
+
+        response.raise_for_status()
+
+        return response.json()
+
+    # ---------------------------------------------------------
+    # Unified Transfer List
+    # ---------------------------------------------------------
+
+    def get_unified_transfer_list(
+        self,
+        automation_id,
+        limit=100,
+        cursor=None,
+        search_keyword=None,
+        status_filter=None,
+        type_filter=None
+    ):
+
+        params = {
+            "automationId": automation_id,
+            "limit": limit
+        }
+
+        if cursor:
+            params["cursor"] = cursor
+
+        if search_keyword:
+            params["searchKeyword"] = search_keyword
+
+        if status_filter:
+            params["statusFilter"] = status_filter
+
+        if type_filter:
+            params["typeFilter"] = type_filter
+
+        response = self.session.get(
+            f"{self.base_url}/api/transfer/unified-by-automation",
+            params=params
+        )
+
+        response.raise_for_status()
+
+        return response.json()
+
+    # ---------------------------------------------------------
+    # Transfer Detail
+    # ---------------------------------------------------------
+
+    def get_transfer_detail(
+        self,
+        transfer_id,
+        workspace_id=None,
+        id_type="transfer"
+    ):
+
+        params = {
+            "idType": id_type
+        }
+
+        if workspace_id:
+            params["workSpaceId"] = workspace_id
+
+        response = self.session.get(
+            f"{self.base_url}/api/transfer-history/{transfer_id}/detail",
+            params=params
+        )
+
+        response.raise_for_status()
+
+        return response.json()
+
+    # ---------------------------------------------------------
+    # Transfer Files
+    # ---------------------------------------------------------
+
+    def get_transfer_files(
+        self,
+        transfer_id,
+        page=1,
+        size=100,
+        current_path=None,
+        workspace_id=None,
+        id_type="transfer"
+    ):
+
+        params = {
+            "page": page,
+            "size": size,
+            "idType": id_type
+        }
+
+        if current_path:
+            params["current_path"] = current_path
+
+        if workspace_id:
+            params["workSpaceId"] = workspace_id
+
+        response = self.session.get(
+            f"{self.base_url}/api/transfer-history/{transfer_id}/get-files",
+            params=params
+        )
+
+        response.raise_for_status()
+
+        return response.json()
